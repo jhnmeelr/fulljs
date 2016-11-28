@@ -22120,8 +22120,8 @@
 	            pushState({ currentContestId: contestId }, '/contest/' + contestId);
 	            api.fetchContest(contestId).then(function (contest) {
 	                _this.setState({
-	                    currentContestId: contest.id,
-	                    contests: _extends({}, _this.state.contests, _defineProperty({}, contest.id, contest))
+	                    currentContestId: contest._id,
+	                    contests: _extends({}, _this.state.contests, _defineProperty({}, contest._id, contest))
 	                });
 	            });
 	        }, _this.fetchContestList = function () {
@@ -22132,6 +22132,29 @@
 	                    contests: contests
 	                });
 	            });
+	        }, _this.fetchNames = function (nameIds) {
+	            if (nameIds.length === 0) {
+	                return;
+	            }
+	            api.fetchNames(nameIds).then(function (names) {
+	                _this.setState({
+	                    names: names
+	                });
+	            });
+	        }, _this.lookupName = function (nameId) {
+	            if (!_this.state.names || !_this.state.names[nameId]) {
+	                return {
+	                    name: '...'
+	                };
+	            }
+	            return _this.state.names[nameId];
+	        }, _this.addName = function (newName, contestId) {
+	            api.addName(newName, contestId).then(function (res) {
+	                return _this.setState({
+	                    contests: _extends({}, _this.state.contests, _defineProperty({}, res.updatedContest._id, res.updatedContest)),
+	                    names: _extends({}, _this.state.names, _defineProperty({}, res.newName._id, res.newName))
+	                });
+	            }).catch(console.error);
 	        }, _temp), _possibleConstructorReturn(_this, _ret);
 	    }
 	
@@ -22169,6 +22192,9 @@
 	        value: function currentContent() {
 	            if (this.state.currentContestId) {
 	                return _react2.default.createElement(_Contest2.default, _extends({
+	                    addName: this.addName,
+	                    fetchNames: this.fetchNames,
+	                    lookupName: this.lookupName,
 	                    contestListClick: this.fetchContestList
 	                }, this.currentContest()));
 	            }
@@ -22292,8 +22318,6 @@
 	    value: true
 	});
 	
-	var _ContestPreview$propT;
-	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
 	var _react = __webpack_require__(/*! react */ 1);
@@ -22301,8 +22325,6 @@
 	var _react2 = _interopRequireDefault(_react);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
@@ -22325,7 +22347,7 @@
 	        }
 	
 	        return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_ref = ContestPreview.__proto__ || Object.getPrototypeOf(ContestPreview)).call.apply(_ref, [this].concat(args))), _this), _this.handleClick = function () {
-	            _this.props.onClick(_this.props.id);
+	            _this.props.onClick(_this.props._id);
 	        }, _temp), _possibleConstructorReturn(_this, _ret);
 	    }
 	
@@ -22352,10 +22374,12 @@
 	    return ContestPreview;
 	}(_react.Component);
 	
-	ContestPreview.propTypes = (_ContestPreview$propT = {
-	    id: _react2.default.PropTypes.number.isRequired,
-	    contestName: _react2.default.PropTypes.string.isRequired
-	}, _defineProperty(_ContestPreview$propT, "contestName", _react2.default.PropTypes.string.isRequired), _defineProperty(_ContestPreview$propT, "onClick", _react2.default.PropTypes.func.isRequired), _ContestPreview$propT);
+	ContestPreview.propTypes = {
+	    _id: _react2.default.PropTypes.string.isRequired,
+	    contestName: _react2.default.PropTypes.string.isRequired,
+	    categoryName: _react2.default.PropTypes.string.isRequired,
+	    onClick: _react2.default.PropTypes.func.isRequired
+	};
 	
 	exports.default = ContestPreview;
 
@@ -22366,7 +22390,7 @@
   \***********************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";
+	'use strict';
 	
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
@@ -22390,28 +22414,131 @@
 	    _inherits(Contest, _Component);
 	
 	    function Contest() {
+	        var _ref;
+	
+	        var _temp, _this, _ret;
+	
 	        _classCallCheck(this, Contest);
 	
-	        return _possibleConstructorReturn(this, (Contest.__proto__ || Object.getPrototypeOf(Contest)).apply(this, arguments));
+	        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	            args[_key] = arguments[_key];
+	        }
+	
+	        return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_ref = Contest.__proto__ || Object.getPrototypeOf(Contest)).call.apply(_ref, [this].concat(args))), _this), _this.handleSubmit = function (event) {
+	            event.preventDefault();
+	            _this.props.addName(_this.refs.newNameInput.value, _this.props._id);
+	            _this.refs.newNameInput.value = '';
+	        }, _temp), _possibleConstructorReturn(_this, _ret);
 	    }
 	
 	    _createClass(Contest, [{
-	        key: "render",
+	        key: 'componentDidMount',
+	        value: function componentDidMount() {
+	            this.props.fetchNames(this.props.nameIds);
+	        }
+	    }, {
+	        key: 'render',
 	        value: function render() {
+	            var _this2 = this;
+	
 	            return _react2.default.createElement(
-	                "div",
-	                { className: "Contest" },
+	                'div',
+	                { className: 'Contest' },
 	                _react2.default.createElement(
-	                    "div",
-	                    { className: "contest-description" },
-	                    this.props.description
+	                    'div',
+	                    { className: 'panel panel-default' },
+	                    _react2.default.createElement(
+	                        'div',
+	                        { className: 'panel-heading' },
+	                        _react2.default.createElement(
+	                            'h3',
+	                            { className: 'panel-title' },
+	                            'Contest Description'
+	                        )
+	                    ),
+	                    _react2.default.createElement(
+	                        'div',
+	                        { className: 'panel-body' },
+	                        _react2.default.createElement(
+	                            'div',
+	                            { className: 'contest-description' },
+	                            this.props.description
+	                        )
+	                    )
 	                ),
 	                _react2.default.createElement(
-	                    "div",
+	                    'div',
+	                    { className: 'panel panel-default' },
+	                    _react2.default.createElement(
+	                        'div',
+	                        { className: 'panel-heading' },
+	                        _react2.default.createElement(
+	                            'h3',
+	                            { className: 'panel-title' },
+	                            'Proposed Names'
+	                        )
+	                    ),
+	                    _react2.default.createElement(
+	                        'div',
+	                        { className: 'panel-body' },
+	                        _react2.default.createElement(
+	                            'ul',
+	                            { className: 'list-group' },
+	                            this.props.nameIds.map(function (nameId) {
+	                                return _react2.default.createElement(
+	                                    'li',
+	                                    { key: nameId, className: 'list-group-item' },
+	                                    _this2.props.lookupName(nameId).name
+	                                );
+	                            })
+	                        )
+	                    )
+	                ),
+	                _react2.default.createElement(
+	                    'div',
+	                    { className: 'panel panel-info' },
+	                    _react2.default.createElement(
+	                        'div',
+	                        { className: 'panel-heading' },
+	                        _react2.default.createElement(
+	                            'h3',
+	                            { className: 'panel-title' },
+	                            'Propose a New Name'
+	                        )
+	                    ),
+	                    _react2.default.createElement(
+	                        'div',
+	                        { className: 'panel-body' },
+	                        _react2.default.createElement(
+	                            'form',
+	                            { onSubmit: this.handleSubmit },
+	                            _react2.default.createElement(
+	                                'div',
+	                                { className: 'input-group' },
+	                                _react2.default.createElement('input', {
+	                                    ref: 'newNameInput',
+	                                    type: 'text',
+	                                    placeholder: 'New Name Here...',
+	                                    className: 'form-control' }),
+	                                _react2.default.createElement(
+	                                    'span',
+	                                    { className: 'input-group-btn' },
+	                                    _react2.default.createElement(
+	                                        'button',
+	                                        { type: 'submit', className: 'btn btn-info' },
+	                                        'Sumbit'
+	                                    )
+	                                )
+	                            )
+	                        )
+	                    )
+	                ),
+	                _react2.default.createElement(
+	                    'div',
 	                    {
-	                        className: "home-link link",
+	                        className: 'home-link link',
 	                        onClick: this.props.contestListClick },
-	                    "Contest List"
+	                    'Contest List'
 	                )
 	            );
 	        }
@@ -22421,8 +22548,13 @@
 	}(_react.Component);
 	
 	Contest.propTypes = {
+	    _id: _react.PropTypes.string.isRequired,
 	    description: _react.PropTypes.string.isRequired,
-	    contestListClick: _react.PropTypes.func.isRequired
+	    contestListClick: _react.PropTypes.func.isRequired,
+	    fetchNames: _react.PropTypes.func.isRequired,
+	    lookupName: _react.PropTypes.func.isRequired,
+	    addName: _react.PropTypes.func.isRequired,
+	    nameIds: _react.PropTypes.array.isRequired
 	};
 	
 	exports.default = Contest;
@@ -22439,7 +22571,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.fetchContestList = exports.fetchContest = undefined;
+	exports.addName = exports.fetchNames = exports.fetchContestList = exports.fetchContest = undefined;
 	
 	var _axios = __webpack_require__(/*! axios */ 184);
 	
@@ -22448,14 +22580,26 @@
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	var fetchContest = exports.fetchContest = function fetchContest(contestId) {
-	    return _axios2.default.get('/api/contests/' + contestId).then(function (res) {
-	        return res.data;
+	    return _axios2.default.get('/api/contests/' + contestId).then(function (resp) {
+	        return resp.data;
 	    });
 	};
 	
 	var fetchContestList = exports.fetchContestList = function fetchContestList() {
-	    return _axios2.default.get('/api/contests').then(function (res) {
-	        return res.data.contests;
+	    return _axios2.default.get('/api/contests').then(function (resp) {
+	        return resp.data.contests;
+	    });
+	};
+	
+	var fetchNames = exports.fetchNames = function fetchNames(nameIds) {
+	    return _axios2.default.get('/api/names/' + nameIds.join(',')).then(function (resp) {
+	        return resp.data.names;
+	    });
+	};
+	
+	var addName = exports.addName = function addName(newName, contestId) {
+	    return _axios2.default.post('/api/names/', { newName: newName, contestId: contestId }).then(function (resp) {
+	        return resp.data;
 	    });
 	};
 

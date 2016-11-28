@@ -38,10 +38,10 @@ class App extends Component {
         );
         api.fetchContest(contestId).then(contest => {
             this.setState({
-                currentContestId: contest.id,
+                currentContestId: contest._id,
                 contests: {
                     ...this.state.contests,
-                    [contest.id]: contest
+                    [contest._id]: contest
                 }
             });
         });
@@ -58,6 +58,24 @@ class App extends Component {
             });
         });
     };
+    fetchNames = (nameIds) => {
+        if (nameIds.length === 0) {
+            return;
+        }
+        api.fetchNames(nameIds).then(names => {
+            this.setState({
+                names
+            });
+        });
+    }
+    lookupName = (nameId) => {
+        if (!this.state.names || !this.state.names[nameId]) {
+            return {
+                name: '...'
+            };
+        }
+        return this.state.names[nameId];
+    }
     pageHeader() {
         if (this.state.currentContestId) {
             return this.currentContest().contestName;
@@ -70,12 +88,30 @@ class App extends Component {
     currentContent() {
         if (this.state.currentContestId) {
             return <Contest
+                            addName={this.addName}
+                            fetchNames={this.fetchNames}
+                            lookupName={this.lookupName}
                             contestListClick={this.fetchContestList}
                             {...this.currentContest()} />;
         }
         return <ContestList 
                     onContestClick={this.fetchContest}
                     contests={this.state.contests} />;
+    }
+    addName = (newName, contestId) => {
+        api.addName(newName, contestId).then(res =>
+            this.setState({
+                contests: {
+                    ...this.state.contests,
+                    [res.updatedContest._id]: res.updatedContest
+                },
+                names: {
+                    ...this.state.names,
+                    [res.newName._id]: res.newName
+                }
+            })
+        )
+        .catch(console.error);
     }
     render() {
         return (
